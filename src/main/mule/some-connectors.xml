@@ -1,0 +1,332 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="c009e30d-2a0d-47b0-8ba9-bc32099239d5" >
+		<http:listener-connection host="0.0.0.0" port="${http.port}" />
+	</http:listener-config>
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="7b289402-7dd3-4364-b733-9d69d82a1211" />
+	<configuration-properties doc:name="Configuration properties" doc:id="40c30fe4-d4d3-4dcb-9661-582d2a537f75" file="test.properties" />
+	<validation:config name="Validation_Config" doc:name="Validation Config" doc:id="dffa8069-8edd-4d7d-9cdd-78c038330987" />
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="6ea83484-7d2c-4b99-8c05-7ae3d4ddbd76" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="Kyathi@28" />
+	</db:config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="f72ab22e-1d21-4acb-8ddd-3f272624bed6" >
+		<salesforce:basic-connection username="jonnalajayalakshmi@gmail.com" password="Chattur@12" securityToken="8ThQJKr6a0SpobnGTIGt5BxQ" url="https://login.salesforce.com/services/Soap/u/56.0" />
+	</salesforce:sfdc-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="aca122e7-aabb-4828-b9ac-be57fc6797af" >
+	</file:config>
+	<flow name="databaseFlow" doc:id="f86bd749-bc4a-40f3-a0fc-f7fb253085b6" >
+		<http:listener doc:name="/db" doc:id="f3fd36bc-ab36-4d91-ac85-2f854fcb9204" config-ref="HTTP_Listener_config" path="/db"/>
+		<db:select doc:name="Select" doc:id="acbbf315-dace-450c-81c0-528bccb802e7" config-ref="Database_Config">
+			<db:sql ><![CDATA[select * from mule.bankdetails]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="Transform Message" doc:id="e18acd01-15bb-440c-afc6-2ecc4d30305f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map {
+	    "custid": $.custid,
+	    "custname": $.custname,
+	    "accno": $.accno,
+	    "password": $.password,
+        "balance": $.balance
+           }]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="da29de22-e823-4e4d-90f4-d9c502b89ecf" message="#[payload]"/>
+	</flow>
+	<flow name="databaseFlow2" doc:id="3d876ea2-41a7-4b17-a460-c1262d34603a" >
+		<http:listener doc:name="/db1" doc:id="7079203c-b58f-4ce1-afe3-6c35a5610a55" config-ref="HTTP_Listener_config" path="/db1"/>
+		<db:insert doc:name="Insert" doc:id="35a4bd1c-c066-4ca3-af9f-47923d9b6f8a" config-ref="Database_Config">
+			<db:sql ><![CDATA[INSERT INTO `mule`.`bankdetails` (`custid`, `custname`, `accno`, `balance`, `password`) VALUES (:custid, :custname, :accno,:balance, :password);
+]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	custid : payload.CustomerID, 
+	custname : payload.CustomerName, 
+	accno : payload.AccountNo, 
+	balance : payload.Balance, 
+	password : payload.Password
+	}]]]></db:input-parameters>
+		</db:insert>
+		<ee:transform doc:name="Transform Message" doc:id="d69519c8-b8e8-4df7-ae49-004edbd46788" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="ValidationFlow" doc:id="000dd137-2523-483d-a600-370db29077f9" >
+		<http:listener doc:name="/valid" doc:id="48647fd9-0d7d-4a68-adcc-ba657407ba18" config-ref="HTTP_Listener_config" path="/valid"/>
+		<ee:transform doc:name="Transform Message" doc:id="a25bda0d-cb1e-450d-9855-29cddeac5595" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload.id]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<validation:is-number doc:name="Is number" doc:id="53dd8345-8e88-4f10-b059-c45f673063f6" config-ref="Validation_Config" value="#[payload]" numberType="INTEGER" message='"This is Not a Number, Please Check it"'/>
+		<ee:transform doc:name="Transform Message" doc:id="3647acd0-f07e-4e0d-b5ae-853c16057172" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<validation:is-null doc:name="Is null" doc:id="22fe8635-c14e-4c09-b0f4-b3ca439332aa" config-ref="Validation_Config" value="#[payload]" message='#["No , It is Not a Null Value, Please Check it"]'/>
+		<logger level="INFO" doc:name="Logger" doc:id="89a81e69-ca2d-4be2-a108-1ca10854fb97" message="#[payload]"/>
+	</flow>
+	<flow name="Scatter-Gather-Flow" doc:id="862915b8-8229-44fd-9b9f-573727abfd8c" >
+		<http:listener doc:name="/scatter" doc:id="264aeb82-0eb7-4be4-9041-9c188792d584" config-ref="HTTP_Listener_config" path="/scatter"/>
+		<set-variable value="#[attributes.queryParams.city1]" doc:name="cityName1" doc:id="5a4e399a-ed4f-4277-a5ab-756a4f21b247" variableName="cityName1" />
+		<set-variable value="#[attributes.queryParams.city2]" doc:name="cityName2" doc:id="02332717-03d2-4588-bc10-8fcfb1ee0f03" variableName="cityName2" />
+		<scatter-gather doc:name="Scatter-Gather" doc:id="8d763da8-0a99-408d-a32b-8490b1d35294" >
+			<route >
+				<http:request method="GET" doc:name="Weather Report for City1" doc:id="1d8d7989-1452-4fde-973f-f0786ed5edb8" config-ref="HTTP_Request_configuration" url="http://api.weatherstack.com/current">
+			<http:query-params><![CDATA[#[output application/java
+---
+{
+	"access_key" : "79353db46a917e5c8cc1043d08922d1c",
+	"query" : vars.cityName1
+}]]]></http:query-params>
+		</http:request>
+				<ee:transform doc:name="Report1" doc:id="fd799ce9-e8d7-4b3c-8364-79566087e69e">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Hello, The current temperature of " ++ payload.location.name ++  " is : " ++  payload.current.temperature]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</route>
+			<route >
+				<http:request method="GET" doc:name="Weather Report for City2" doc:id="3b73aa9f-e199-40ad-8157-76a30fcb2546" config-ref="HTTP_Request_configuration" url="http://api.weatherstack.com/current">
+			<http:query-params><![CDATA[#[output application/java
+---
+{
+	"access_key" : "79353db46a917e5c8cc1043d08922d1c",
+	"query" : vars.cityName2
+}]]]></http:query-params>
+		</http:request>
+				<ee:transform doc:name="Report2" doc:id="e9acfebd-bea0-4775-b6c8-a9e3b066b2c7" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Hello, The current temperature of " ++ payload.location.name ++  " is : " ++  payload.current.temperature]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</route>
+		</scatter-gather>
+		<ee:transform doc:name="FinalReport" doc:id="891bb73d-f8bf-452a-b477-e24a0267868e">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+"First City Temperature is : " : payload[0].payload,
+"Second City Temperature is : " : payload[1].payload
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="FinalReport" doc:id="5e77c1b3-603a-4feb-bcc2-f136ed818d7c" message="#[payload]"/>
+	</flow>
+	
+	<flow name="Salesforce-To-MySql" doc:id="cea9de81-4f79-4c92-b637-2532ab7b4821" >
+		<salesforce:modified-object-listener objectType="Lead" doc:name="On Modified Object" doc:id="b04de57a-e327-49d8-87a1-2494becabdf9" config-ref="Salesforce_Config">
+			<scheduling-strategy >
+				<fixed-frequency frequency="10" timeUnit="SECONDS" />
+			</scheduling-strategy>
+		</salesforce:modified-object-listener>
+		<ee:transform doc:name="Transform Message" doc:id="6637de18-37d0-4154-b9b2-345a757470b5" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<db:insert doc:name="Insert" doc:id="285c4159-9360-4352-b001-0015faee0f99" config-ref="Database_Config">
+			<db:sql ><![CDATA[INSERT INTO `mule`.`salesforceleads` (`company`, `Name`, `Status`) VALUES (:company, :Name, :Status);
+]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	company : payload.Company,
+	Name : payload.Name, 
+	Status : payload.Status
+}]]]></db:input-parameters>
+		</db:insert>
+		<logger level="INFO" doc:name="Logger" doc:id="9f9b3392-3e42-4b35-83f6-cf07bb660382" message="#[payload]"/>
+	</flow>
+	<flow name="WeatherReport-Choice-Flow" doc:id="4062b582-983e-4dec-bb19-71005318eec4" >
+		<http:listener doc:name="/current" doc:id="b4f1346b-9905-45bf-8a31-f363f59fbbf0" config-ref="HTTP_Listener_config" path="/test"/>
+		<set-variable value="#[attributes.queryParams.city]" doc:name="cityName" doc:id="06a85bd8-3227-4fd5-9db4-2b95a8f81695" variableName="cityName"/>
+		<http:request method="GET" doc:name="Weather API" doc:id="ce93a1bf-b357-4f1d-b5f0-d309f7fb9840" config-ref="HTTP_Request_configuration" url="http://api.weatherstack.com/current">
+			<http:query-params><![CDATA[#[output application/java
+---
+{
+	"access_key" : "79353db46a917e5c8cc1043d08922d1c",
+	"query" : vars.cityName
+}]]]></http:query-params>
+		</http:request>
+		<choice doc:name="Choice" doc:id="5fd895d8-6043-4f4d-bed1-f0dab207487a" >
+			<when expression="#[payload.success == false]">
+				<ee:transform doc:name="False Statement" doc:id="3a67f5fa-2330-4cef-a6ea-4c0b30990693" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Hey, you have requested a wrong city name: " ++ vars.cityName]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="True Statement" doc:id="4fc6a8bd-dbef-4466-bda8-d12cda689120">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Hello, The current temperature of " ++ payload.location.name ++  " is : " ++  payload.current.temperature]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="00a31582-c8a6-497d-8915-c2ac585811fb" message="#[payload]"/>
+	</flow>
+	<flow name="apexhoursFlow" doc:id="67069da4-6f96-417a-9495-d314116893a7" >
+		<http:listener doc:name="my first Listener" doc:id="0c39b11f-9cb6-4053-bfb9-4700a6b31e88" config-ref="HTTP_Listener_config" path="/test"/>
+		<ee:transform doc:name="Transform Message" doc:id="d6d1b6dd-d077-4f06-8dd2-c5c60cddc61b">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+ " Favourite fruit is "
+]]></ee:set-payload>
+				<ee:set-attributes ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	queryParams : {
+		city : "Bangalore"
+	
+	}
+	
+	}]]></ee:set-attributes>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="name" ><![CDATA[attributes.queryParams.name]]></ee:set-variable>
+				<ee:set-variable variableName="fruitName" ><![CDATA["Apple"]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="e19edcbb-0615-40ee-bc8a-3160e1a80731" message='#[payload]'/>
+		<logger level="INFO" doc:name="Logger" doc:id="e7cc6cf6-e75a-491d-b215-235864da5938" message="#[vars.name]"/>
+		<ee:transform doc:name="Transform Message" doc:id="6c297316-a4bc-4c88-94db-955dcb4c9f8f" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+"First Payload" : payload,
+"First variable" : vars.name,
+"Second Variable" : vars.fruitName,
+"Message": "Wel come to Github",
+"Message": "Wel come to Github2",
+"Value using dollar " : '${message}',
+"Value using p " : p('message')
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="f7742823-b96e-4691-813d-541a23fa8df1" message='#["End of main flow"]'/>
+	</flow>
+	<flow name="private-flow" doc:id="0daf8542-64ff-4f56-9963-57e3a26c5595" >
+		<http:listener doc:name="Listener" doc:id="a9db3628-cb84-4586-aa36-2c364164685b" config-ref="HTTP_Listener_config" path="/airIndia"/>
+		<ee:transform doc:name="Transform Message" doc:id="051b8fa3-35c2-4507-b2be-787cab3c8c75" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload map((item,index) -> {
+    "Name" :item.FirstName ++ " " ++ item.LastName,
+    "Branch" : item.Branch map ((item1,index1) ->{
+      "Name": item1,
+      "Description" : item.FirstName ++ item.LastName ++ " is studying in " ++  item1
+    }),
+   "Roll NO:" : item.FirstName ++  "-" ++ item.LastName ++  "-" ++  item.ID
+    })]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="9dec848b-baaf-438f-bf95-a7b425fe392f" message="#[payload]"/>
+	</flow>
+	<flow name="ValidationFlow1" doc:id="ba243105-f33e-4847-9d6d-6c78458de4c0" >
+		<http:listener doc:name="/valid1" doc:id="74d863f7-5f33-4e05-b040-54885cd202dd" config-ref="HTTP_Listener_config" path="/valid1" />
+		<ee:transform doc:name="Transform Message" doc:id="d17bc15c-c951-4083-bf5f-bd7a990868ca" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload.id]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<validation:is-not-null doc:name="Is not null" doc:id="9be03925-9548-425b-8365-ff022d87f2aa" config-ref="Validation_Config" value="#[payload]" message='#["No , It is a Null Value, Please Check it"]'/>
+		<ee:transform doc:name="Output payload" doc:id="993eafc8-62e7-4f1f-bf34-bf64df01c57e" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="9ef10a85-5c48-43ac-9d56-e12124924f7c" message="#[payload]" />
+	</flow>
+	<flow name="Salesforce-To-MySql-LocalArea" doc:id="821595ee-c93a-45b0-b308-13d9739e958b" >
+		<salesforce:modified-object-listener objectType="Lead" doc:name="On Modified Object" doc:id="bf8db4ae-e987-467f-aada-02c5d445cbb0" config-ref="Salesforce_Config" >
+			<scheduling-strategy >
+				<fixed-frequency frequency="10" timeUnit="SECONDS" />
+			</scheduling-strategy>
+		</salesforce:modified-object-listener>
+		<ee:transform doc:name="Transform Message" doc:id="e0fd71b2-fb0b-4d79-bbe2-37eaae222f2b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<scatter-gather doc:name="Scatter-Gather" doc:id="762cabe5-d07a-4d79-90c8-6bfbf3db4449" >
+			<route >
+				<db:insert doc:name="Insert" doc:id="c944e71b-01bc-4c84-8b32-4a1453030772" config-ref="Database_Config">
+			<db:sql><![CDATA[INSERT INTO `mule`.`salesforceleads` (`company`, `Name`, `Status`) VALUES (:company, :Name, :Status);
+]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	company : payload.Company,
+	Name : payload.Name, 
+	Status : payload.Status
+}]]]></db:input-parameters>
+		</db:insert>
+				<logger level="INFO" doc:name="Logger1" doc:id="2a7e806a-c0db-4a16-bcec-d3d248941f6c" message="#[payload]" />
+			</route>
+			<route >
+				<file:write doc:name="Write" doc:id="cb076d0d-f10e-4a2e-b65a-4854107df8ba" config-ref="File_Config" path="C:/Users/JJayaLakshmi/Documents/Doctus/SalesforceLeads.json" mode="APPEND">
+					<file:content ><![CDATA[#[output application/json
+---
+payload]]]></file:content>
+				</file:write>
+				<logger level="INFO" doc:name="Logger" doc:id="4e67b95a-cea8-40b5-9d01-1e9b5ecfb990" message="#[payload]" />
+			</route>
+		</scatter-gather>
+		<logger level="INFO" doc:name="Logger" doc:id="d39a77e2-717d-42bd-a6e6-a124501ff47a" message="#[payload]" />
+	</flow>
+</mule>

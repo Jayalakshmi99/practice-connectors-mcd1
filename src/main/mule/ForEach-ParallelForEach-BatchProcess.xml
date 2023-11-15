@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd">
+	<flow name="BatchProcess-Flow" doc:id="d38acb6c-a974-41c4-8b15-967f29af7aee" >
+		<http:listener doc:name="/batch" doc:id="eeea120a-7326-4258-8d99-a77368adad19" config-ref="HTTP_Listener_config" path="/batch">
+			<http:response >
+				<http:body ><![CDATA[#[output application/json --- payload]]]></http:body>
+			</http:response>
+		</http:listener>
+		<batch:job jobName="BatchProcessBatch_Job" doc:id="95313f4c-c706-4d5a-8404-48e887c372da" maxFailedRecords="3">
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="6cedeaf2-c62b-4ccf-bf40-5f79717a20f3" >
+					<set-payload value="#[payload + 10]" doc:name="payload + 10" doc:id="2b4d3daf-0648-4efd-9123-520fc1bc1349" />
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="9ed9e6ba-fd60-4fea-a2d5-76f206e845a0" size="2">
+						<logger level="INFO" doc:name="Logger" doc:id="4ca058cc-335f-4173-a405-895857db652b" message="#[write(payload,'application/json')]"/>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="b4134d5b-c75e-4af0-8efa-9bad3239e44c" message="#[payload]"/>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+	<flow name="ForEach-Flow" doc:id="874f268a-6b14-433c-b0cb-9fd5e98074d3" >
+		<http:listener doc:name="/foreach" doc:id="8c839c23-eb66-4d7f-b764-6cc69eb30ee8" config-ref="HTTP_Listener_config" path="/foreach"/>
+		<set-payload value="#[payload]" doc:name="[1,2,3,4,5]" doc:id="cdd17452-562c-4cd1-971d-0f87ba52b54d" />
+		<set-variable value="#[[]]" doc:name="finalPayload : []" doc:id="d53e2af3-4926-4103-b1b1-c23abdc2b3f5" variableName="finalPayload"/>
+		<foreach doc:name="For Each" doc:id="fd089ba1-26d1-4ba3-aabb-8df640bc479e" collection="#[payload]">
+			<try doc:name="Try" doc:id="2b4936a2-bb39-40b2-9098-23618d59da20" >
+				<set-payload value="#[payload + 10]" doc:name="payload + 10" doc:id="0d9ba211-881c-4772-a0d8-3bf413ddbbb3" />
+				<logger level="INFO" doc:name="Logger" doc:id="fe7d96e8-8c87-45fd-ba11-b1d26d2fdb01" message='#["For each inside payload value is : " ++ payload]' />
+				<set-variable value="#[output application/json --- vars.finalPayload + payload]" doc:name="finalPayload" doc:id="3e44784d-1c1a-4bc7-8065-6b21a908b423" variableName="finalPayload" />
+				<error-handler >
+					<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="c3b1af4b-656d-4cb5-b5c9-57f25122d0ea" >
+						<logger level="INFO" doc:name="Logger" doc:id="a7b8664c-4c23-4bbe-aa68-63a40b1b3cb2" message='#["Error occured for payload value ::  " ++ payload]'/>
+					</on-error-continue>
+				</error-handler>
+			</try>
+		</foreach>
+		<set-payload value='#[vars.finalPayload]' doc:name="Set Payload" doc:id="0fa2852a-22a5-4a8f-bfc3-99df7b20302d" />
+		<logger level="INFO" doc:name="Logger" doc:id="6c33b532-86bc-4833-943d-0d4f0c46f0e4" message="#[payload]"/>
+	</flow>
+	<flow name="Parallel-ForEach-Flow" doc:id="b3aaff2e-8932-4190-a3dd-8695cf91c601" >
+		<http:listener doc:name="/Pforeach" doc:id="6002523b-8d75-4957-8387-fd99f08d41a0" config-ref="HTTP_Listener_config" path="/Pforeach" />
+		<set-payload value="#[payload]" doc:name="[1,2,3,4,5]" doc:id="74198324-8467-4b7d-9dad-cc7013d33953" />
+		<set-variable value="#[[]]" doc:name="finalPayload : []" doc:id="5706fd51-7c41-46b0-8d3f-ec039389733e" variableName="finalPayload" />
+		<parallel-foreach doc:name="Parallel For Each" doc:id="1017546c-3ca3-4249-9fad-8923d75b4e1d" >
+			<set-payload value="#[payload + 10]" doc:name="payload + 1" doc:id="2527cc8a-ed7c-45be-9b3b-441ce1b58886" />
+			<logger level="INFO" doc:name="Logger" doc:id="700ecb4f-3b82-4ac5-8c33-95d68ff95975" message='#["For each inside payload value is : " ++ payload]' />
+			<set-variable value="#[output application/json --- vars.finalPayload + payload]" doc:name="finalPayload" doc:id="bdb8f077-cc91-4a3b-8834-a63a4f3b127c" variableName="finalPayload" />
+		</parallel-foreach>
+		<set-payload value="#[vars.finalPayload]" doc:name="Set Payload" doc:id="ec541c49-4dea-489a-b267-cee7cb0f837b" />
+		<logger level="INFO" doc:name="Logger" doc:id="26197880-29a8-44c5-93db-8099014b79a7" message="#[payload]" />
+	</flow>
+</mule>

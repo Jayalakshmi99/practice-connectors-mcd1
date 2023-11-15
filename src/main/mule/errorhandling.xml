@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<configuration doc:name="Configuration" doc:id="22084c59-9254-4709-a073-8538e4e5632b" defaultErrorHandler-ref="CommonErrorHandler1" />
+	<flow name="MainFlow-OnErrorContinueFlow" doc:id="e450d5af-42dd-4247-a3da-e8de397e9f8c" >
+		<http:listener doc:name="/error1" doc:id="a1f8c5f0-9be1-47bc-b38f-ff77dcd39119" config-ref="HTTP_Listener_config" path="/error1"/>
+		<set-variable value="Apple" doc:name="Fruit : Apple" doc:id="b470ace7-3ad9-421d-9248-a737efbecf87" variableName="Fruit"/>
+		<flow-ref doc:name="calls PrivateFlow1" doc:id="ecaaed56-80aa-4de3-b380-50d863024368" name="PrivateFlow1"/>
+		<ee:transform doc:name="Success" doc:id="a4acf080-797c-42a4-a1a5-cf1fb8d00ed1" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Success"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-payload value="#[payload]" doc:name="Final Payload" doc:id="818e0d78-4dc7-4b0c-a89b-df73793003ba" />
+		<logger level="INFO" doc:name="Logger" doc:id="4c74d5b6-f0cf-4e4b-8021-185740fc6d28" message="#[payload]"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="420906e1-9d3f-4ce6-848f-6e98dad63b99" >
+				<ee:transform doc:name="Error in Main Flow" doc:id="b335c385-714e-4487-9833-fd8090c29afe" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Error in Main Flow"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="5576661f-38e1-46a7-a2b1-f92918473a0c" message="#[payload]"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="PrivateFlow1" doc:id="3191288b-8167-408e-9cca-1c714f23cbe0" >
+		<http:request method="GET" doc:name="Request" doc:id="cf4eca71-d720-4507-bef9-477bca1d0174" url="aa.com"/>
+		<ee:transform doc:name="Success in Private flow" doc:id="0204772d-54eb-4175-ac83-2ca074751839" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+"Success in Private flow"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="a5b8411b-1dba-4ed6-a6c8-331f16019a32" >
+				<ee:transform doc:name="Error occured in Private Flow" doc:id="ffa81ee4-a8ca-45e2-8639-af03a3459305">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Error occured in Private Flow"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="9659d214-bf1c-41f6-9d13-7a7c5ed35c64" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="ErrorHandlingRule1-Fow" doc:id="e7057c27-f42c-464b-a8b2-d2e9738089a7" >
+		<http:listener doc:name="/error" doc:id="ac9c4307-939b-432e-906d-060cd4d2f35f" config-ref="HTTP_Listener_config" path="/error" >
+			<http:error-response >
+				<http:body ><![CDATA[#[payload]]]></http:body>
+			</http:error-response>
+		</http:listener>
+		<set-variable value="Apple" doc:name="Fruit - Apple" doc:id="2f19beec-b6a6-44fb-92b1-1a556c84dc24" variableName="Fruit" />
+		<http:request method="GET" doc:name="Request" doc:id="489c5791-6c7b-4c0b-9584-3699f29ad5f7" url="xyz.abc.com"/>
+		<ee:transform doc:name='"Success"' doc:id="101d271a-5ae9-468e-88ce-a115b63b60a4" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Success"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-payload value="#[payload]" doc:name="Final Payload" doc:id="8a0f4a3c-fd01-4ec9-856b-d1b7d3e98a40" />
+		<logger level="INFO" doc:name="Exit Logger" doc:id="bfffd54f-97c4-4f95-bb76-80f81fb19575" message="#[payload]"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="bcf9c952-d851-4017-9f32-fb7a4ae08372" >
+				<ee:transform doc:name='"Error occur in main flow"' doc:id="c51291c4-1d57-461f-9b32-b16769477ca8">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Error occur in main flow"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="5fc3066f-92f8-41d6-97ac-02acf9a6264c" message='#["Payload in Error handling"]'/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="errorhandling-RaiseError-flow" doc:id="50421377-aa72-4d48-a907-558a3dbb6ce4" >
+		<http:listener doc:name="/RaiseError" doc:id="7ed7df84-2828-42d8-89c5-bcbad2438ff9" config-ref="HTTP_Listener_config" path="/RaiseError"/>
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="a0a58264-e8a8-47ea-8529-cce6aa893dce" />
+		<choice doc:name="Choice" doc:id="f0283010-a803-42e8-9f3c-d9b1791452ce" >
+			<when expression='#[payload != "Apple"]'>
+				<raise-error doc:name="Raise error" doc:id="d2545d23-66fb-46d2-bd59-18697342a10d" type="FRUIT:NOT_APPLE" description="The fruit is not apple"/>
+			</when>
+			<otherwise >
+				<set-payload value='#["It is an Apple"]' doc:name="Set Payload" doc:id="2a90a5e5-c839-4724-9e83-93215621c4f7" />
+				<logger level="INFO" doc:name="Logger" doc:id="012f6a82-8602-438d-b57c-62671b1fd318" message="#[payload]"/>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Logger" doc:id="4e9a3011-e74b-4f1d-b613-55ff2ad78788" />
+	</flow>
+	<flow name="Errorhandling-TryBlock-Flow" doc:id="bab82f0a-9505-4db2-9700-e871263710b0" >
+		<http:listener doc:name="/TryError" doc:id="4cc310f7-837f-4859-b17b-a255c3705f46" config-ref="HTTP_Listener_config" path="/TryError"/>
+		<try doc:name="Try" doc:id="514ec0f6-be50-4e46-8017-3d897ffae4f1" >
+			<http:request method="GET" doc:name="Request" doc:id="100e9c12-2732-44fd-817f-384ea34101a0" config-ref="HTTP_Request_configuration" url="rr.ooo"/>
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="20de2423-3186-4413-8ccb-18c2fddf5fa3" >
+					<ee:transform doc:name="Error occured in Try block" doc:id="d54d411b-ef70-458e-b7c8-367431f93026" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Error occured in Try block "]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<logger level="INFO" doc:name="Logger" doc:id="16a66c6b-32f7-4035-9a3d-99fac57658cf" />
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="d4f9bd1b-bbb3-42d8-b96a-c56bf4db053d" >
+				<ee:transform doc:name="Error in Main Flow" doc:id="10e02e06-2f69-4969-ba94-9501d18614fe" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Error in Main Flow" ]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="b9ebebb3-e8ae-421f-ae62-8c5a608c31c3" />
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="Errorhandling-TryBlock-onErrorContinue-Flow" doc:id="1db3d3b1-cfa2-429c-9fc2-338c46fec5e8" >
+		<http:listener doc:name="/TryError1" doc:id="453a22d5-16a2-40de-91a5-8ed55329b391" config-ref="HTTP_Listener_config" path="/TryError1" />
+		<try doc:name="Try" doc:id="2a7ffe50-24c1-4c2b-ad21-86fde58a067b" >
+			<http:request method="GET" doc:name="Request" doc:id="04d77411-f5c3-4624-8a16-849dcf909940" config-ref="HTTP_Request_configuration" url="rr.ooo" />
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="1c3fec70-1cb8-4711-8f91-827e3bf7289d" >
+					<ee:transform doc:name="Error occured in Try block" doc:id="90b3892d-c35d-4dc4-8d53-588f5cad0d6b">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+"Error occured in Try block "]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<logger level="INFO" doc:name="Logger" doc:id="164c48e7-8e37-496e-9754-837538fb68b6" />
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<ee:transform doc:name="Success" doc:id="ceb1b17f-224e-4172-a592-cac1416a6d09" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Success"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="37f8e9e0-47ae-422e-8e54-74d39ed92691" >
+				<ee:transform doc:name="Error in Main Flow" doc:id="ff75b88f-8005-439c-a0a9-e39b21468934" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Error in Main Flow" ]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="cf220e57-9d4e-48c8-b202-8b1cd3834c4d" />
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="Errorhandling-UntilSucessfulError-Flow" doc:id="aebad6e4-f1ab-4945-b906-7d4e34b2982a" >
+		<http:listener doc:name="/untilSucessfulError" doc:id="a36709cc-53c0-4070-9e51-c0b8d3364f6d" config-ref="HTTP_Listener_config" path="/untilSucessfulError"/>
+		<until-successful maxRetries="3" doc:name="Until Successful" doc:id="6b3f3830-ef9c-42b5-9bbe-63302ce0cf41" millisBetweenRetries="6000">
+			<http:request method="GET" doc:name="Request" doc:id="87a6c59e-d684-4b87-9897-d9de82d5eab3" config-ref="HTTP_Request_configuration" url="err.mmm"/>
+		</until-successful>
+		<ee:transform doc:name="Sucess" doc:id="42bb44ec-015e-4bc9-8705-d124167cd069" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Sucess"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="ca94ae39-cf15-4caa-b49e-53b88e17523f" >
+				<ee:transform doc:name="Error occured in MainFlow" doc:id="cb14da17-3410-429d-9795-49491cd6fb28" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Error occured in MainFlow "]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="323929f0-1f76-43e0-9326-2670bb6b1f15" message="#[payload]"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<error-handler name="CommonErrorHandler" doc:id="45ced943-0186-4aa4-ad18-6824f8780bd6" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="64330773-24b8-4674-adfb-20674fcae365" type="HTTP:CONNECTIVITY">
+			<ee:transform doc:name="Error occured in Global Error Handler - On Error Propagate" doc:id="04e14728-754c-4bc4-bafc-b201d89d1b08" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Error occured in Global Error Handler - On Error Propagate"]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="b5eccf03-d443-4256-b6b0-4c5fb3faa82d" message="#[payload]"/>
+		</on-error-propagate>
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="2623a3a5-3df7-4de9-bf31-0177ee9473ad" type="HTTP:CONNECTIVITY">
+			<ee:transform doc:name="Error occured in Global Error Handler - On Error Continue" doc:id="96068773-1975-47d4-b144-90aed568b46a" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Error occured in Global Error Handler - On Error Continue"]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-continue>
+	</error-handler>
+	<flow name="MainFlow-OnErrorContinueFlow-GlobalLevel" doc:id="4d45bb4d-7bb5-4f82-87ee-7c460d360b8f" >
+		<http:listener doc:name="/error3" doc:id="59d3cc10-857f-4f77-b110-1ff543a0faed" config-ref="HTTP_Listener_config" path="/error3" />
+		<set-variable value="Apple" doc:name="Fruit : Apple" doc:id="4a425764-4236-4676-afba-3c49893f4005" variableName="Fruit" />
+		<flow-ref doc:name="calls PrivateFlow-GlobalLevel" doc:id="2913e721-1374-430c-9c2e-eba965a7ce21" name="PrivateFlow-GlobalLevel" />
+		<logger level="INFO" doc:name="Logger" doc:id="acbc950d-3cc5-49a8-8d57-f93237b22166" message="#[payload]" />
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="2459de28-da7c-4784-9eff-39f4f0681719" >
+				<ee:transform doc:name="Error in Main Flow" doc:id="78a6e113-3dd9-4f1a-a546-a33a15933763" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Error in Main Flow"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="985f0601-e760-4e43-bdbd-9eaf9ded0bb1" message="#[payload]" />
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="PrivateFlow-GlobalLevel" doc:id="4e3ad42b-e9a7-4a80-b574-34f522ec73a0" >
+		<try doc:name="Try" doc:id="3738b5b4-6f0c-41e2-b33f-c81b53535b46" >
+			<http:request method="GET" doc:name="Request" doc:id="a8d5f385-96f5-4288-aabd-7de677e88d92" url="aa.com" />
+			<error-handler >
+				<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="5ca56721-37b7-491f-aeef-14dfa7ef5f1e" >
+					<ee:transform doc:name="Error in TryBlock" doc:id="f45bb036-b416-41cb-97c6-8c76cdd8f749" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Error in TryBlock"]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</on-error-propagate>
+			</error-handler>
+		</try>
+		<ee:transform doc:name="Success in Private flow" doc:id="ceabf146-9052-49fd-bd13-e95e7fa3012b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+"Success in Private flow"]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="7d6502de-e764-4ae4-80ab-537089db0054" >
+				<ee:transform doc:name="Error occured in Private Flow" doc:id="344b3787-8eb7-48cd-9a00-6fa23e8bb771" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Error occured in Private Flow"]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="60441e73-0b58-45e9-9202-144324416e2a" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="MainFlow-OnErrorContinueFlow-GlobalLevel1" doc:id="fdf075cc-90b4-4ebb-beb1-3afa1ce1f663" >
+		<http:listener doc:name="/error4" doc:id="fb975646-7805-4af7-bc6e-a048abd39639" config-ref="HTTP_Listener_config" path="/error4" >
+		</http:listener>
+		<set-variable value="Apple" doc:name="Fruit : Apple" doc:id="93076232-8aa2-44a8-bff5-ba1b9a5e2ab8" variableName="Fruit" />
+		<flow-ref doc:name="calls PrivateFlow-GlobalLevel" doc:id="a1f2ab37-a546-4b3d-ac8b-07a5dad9cb23" name="PrivateFlow-GlobalLevel" />
+		<logger level="INFO" doc:name="Logger" doc:id="1eaeece1-fc02-4f9a-88bf-4ff250d6058d" message="#[payload]" />
+	</flow>
+	<error-handler name="CommonErrorHandler1" doc:id="0597dbde-635b-43bd-a8be-5da348204888" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="c769099f-b314-48ea-93e8-12847afe8b77" type="HTTP:BAD_REQUEST" >
+			<ee:transform doc:name="Error occured in Global Error Handler - On Error Propagate" doc:id="25a57a7a-8f92-4318-b1e9-c0e59d7bef89" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"Error occured in Global Error Handler - On Error Propagate"]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="12419447-c818-4525-ac9e-f0320b7e88e8" message="#[payload]" />
+		</on-error-propagate>
+	</error-handler>
+</mule>
